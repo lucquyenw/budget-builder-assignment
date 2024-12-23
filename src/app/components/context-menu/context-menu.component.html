@@ -1,0 +1,10 @@
+<div *ngIf="contextMenu().isShow" 
+    appClickOutside (isClickedOutSide)="hideContextMenu()"
+    class="text-sm bg-white d-block w-80 absolute border-solid border-1 rounded-md shadow-xl"
+    [ngStyle]="{'top': contextMenu().y + 'px', 'left': contextMenu().x + 'px'}">
+
+    <ul class="list-none ">
+        <li *ngIf="contextMenu().value != undefined" class="m-4 hover:bg-gray-200" (click)="applyToAll()">Apply To All</li>
+        <li class="m-4 hover:bg-gray-200" (click)="deleteRow()">Delete Row</li>
+    </ul>
+</div>

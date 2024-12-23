@@ -1,0 +1,166 @@
+<table #table class="table-fixed border border-slate-400 mx-16">
+    <thead class="bg-gray-100">
+        <tr class="border border-slate-400">
+            <th class="border border-slate-400" [width]="300"><app-dropdown-list [options]="budgetTableService.months()"
+                    [selectedValue]="budgetTableService.seletectStartMonth()"
+                    (selectedValueChanged)="budgetTableService.seletectStartMonth.set($event)"></app-dropdown-list>
+                <app-dropdown-list [options]="budgetTableService.months()"
+                    [selectedValue]="budgetTableService.seletectEndMonth()"
+                    (selectedValueChanged)="budgetTableService.seletectEndMonth.set($event)"></app-dropdown-list>
+            </th>
+            <th class="border border-slate-400" [width]="150" *ngFor="let month of budgetTableService.rangedMonths()">
+                {{month}} {{budgetTableService.currentYear}}
+            </th>
+        </tr>
+    </thead>
+    <tbody>
+        <ng-container *ngFor="let rootCategory of budgetTableService.rootCategories(); let rootIndex = index">
+            <tr class="border border-slate-400">
+                <td class="border border-slate-400 font-semibold" [colSpan]="13">{{rootCategory.name}}</td>
+            </tr>
+
+            <ng-container
+                *ngFor="let parentCategory of rootCategory.parentCategories; let parentIndex = index; trackBy: trackByFn">
+                <tr class="border border-slate-400">
+                    <td class="border border-slate-400 font-semibold">
+                        <input type="text" [(ngModel)]="parentCategory.category.name" appHandleInput
+                            [ngModelOptions]="{ standalone: true}"
+                            (contextmenu)="onRightClick({ event: $event, parentIndex, rootIndex, isParent: true})">
+                    </td>
+                    <ng-container
+                        *ngFor="let months of budgetTableService.rangedMonths(); let cellIndex = index; trackBy: trackByFn">
+                        <td class="border border-slate-400">
+                            <input type="number" inputmode="numeric" appHandleInput
+                                [(ngModel)]="parentCategory.category.inputs[cellIndex]"
+                                [ngModelOptions]="{ standalone: true}"
+                                (ngModelChange)="budgetTableService.updateTotals(rootIndex)" 
+                                (contextmenu)="onRightClick({ event: $event,  value: parentCategory.category.inputs[cellIndex], parentIndex, rootIndex, isParent: true})"/>
+                        </td>
+                    </ng-container>
+                </tr>
+
+                <ng-container
+                    *ngFor="let subCategory of parentCategory.categories; let childIndex = index; trackBy: trackByFn">
+                    <tr class="border border-slate-400">
+                        <td class="border border-slate-400">
+                            <input type="text" [(ngModel)]="subCategory.name" [ngModelOptions]="{ standalone: true}" appHandleInput
+                            (contextmenu)="onRightClick({ event: $event, parentIndex, rootIndex, childIndex})">
+                        </td>
+                        <ng-container
+                            *ngFor="let months of budgetTableService.rangedMonths();  let cellIndex = index; trackBy: trackByFn">
+                            <td class="border border-slate-400">
+                                <input type="number" inputmode="numeric" [(ngModel)]="subCategory.inputs[cellIndex]" appHandleInput
+                                    (ngModelChange)="budgetTableService.updateTotals(rootIndex)"
+                                    (contextmenu)="onRightClick({ event: $event,  value: subCategory.inputs[cellIndex], parentIndex, rootIndex, childIndex})" />
+                            </td>
+                        </ng-container>
+                    </tr>
+                </ng-container>
+
+                <tr class="border border-slate-400">
+                    <td class="border border-slate-400"><input type="text"
+                            [placeholder]="'Add a new \'' + parentCategory.category.name +'\' Category'"
+                            (keydown.enter)="budgetTableService.addSubCategories($event, rootIndex, parentIndex)" appHandleInput></td>
+
+                    <ng-container
+                        *ngFor="let months of budgetTableService.rangedMonths();  let cellIndex = index; trackBy: trackByFn">
+                        <td class="border border-slate-400">
+                        </td>
+                    </ng-container>
+                </tr>
+
+                <tr class="border border-slate-400">
+                    <td class="border border-slate-400 font-semibold">Sub Totals</td>
+
+                    <ng-container
+                        *ngFor="let months of budgetTableService.rangedMonths();  let cellIndex = index; trackBy: trackByFn">
+                        <td class="border border-slate-400 font-semibold">
+                            <span > {{ parentCategory.totals[cellIndex] | displayZero}}
+                            </span>
+                        </td>
+                    </ng-container>
+                </tr>
+                <tr class="border border-slate-400">
+                    <td><span>&#8203;</span></td>
+                </tr>
+            </ng-container>
+
+            <tr class="border border-slate-400">
+                <td class="border border-slate-400"><input type="text"
+                        appHandleInput
+                        [placeholder]="'Add a new Parent Category'"
+                        (keydown.enter)="budgetTableService.addParentCategories($event, rootIndex)"></td>
+
+                <ng-container
+                    *ngFor="let months of budgetTableService.rangedMonths();  let cellIndex = index; trackBy: trackByFn">
+                    <td class="border border-slate-400">
+                    </td>
+                </ng-container>
+            </tr>
+
+            <tr class="border border-slate-400">
+                <td><span>&#8203;</span></td>
+            </tr>
+            <tr class="border border-slate-400">
+                <td class="border border-slate-400 font-semibold">
+                    <span *ngIf="rootCategory.name === 'Income'">{{ rootCategory.name }} Total</span>
+                    <span *ngIf="rootCategory.name === 'Expenses'">Total {{ rootCategory.name }}</span>
+                </td>
+
+                <ng-container
+                    *ngFor="let months of budgetTableService.rangedMonths();  let cellIndex = index; trackBy: trackByFn">
+                    <td class="border border-slate-400 font-semibold">
+                        <span *ngIf="rootCategory.totals[cellIndex]> 0"> {{ rootCategory.totals[cellIndex] }} </span>
+                    </td>
+                </ng-container>
+            </tr>
+            <tr *ngIf="rootIndex === 0" class="border border-slate-400">
+                <td><span>&#8203;</span></td>
+            </tr>
+        </ng-container>
+        <tr class="border border-slate-400 bg-cyan-100" >
+            <td class="border border-slate-400 font-semibold">
+                Profit / Losss
+            </td>
+
+            <ng-container
+                *ngFor="let months of budgetTableService.rangedMonths();  let cellIndex = index; trackBy: trackByFn">
+                <td class="border border-slate-400 font-semibold" 
+                [class.text-red-500]="budgetTableService.monthyBalances()[cellIndex] && budgetTableService.monthyBalances()[cellIndex].profitAndLoss  < 0">
+                    <span >{{budgetTableService.monthyBalances()[cellIndex]?.profitAndLoss | displayZero}} </span>
+                </td>
+            </ng-container>
+        </tr>
+
+        <tr class="border border-slate-400 bg-cyan-200">
+            <td class="border border-slate-400 font-semibold">
+                Opening Balance
+
+            </td>
+
+            <ng-container
+                *ngFor="let months of budgetTableService.rangedMonths();  let cellIndex = index; trackBy: trackByFn">
+                <td class="border border-slate-400 font-semibold" 
+                [class.text-red-500]="budgetTableService.monthyBalances()[cellIndex] && budgetTableService.monthyBalances()[cellIndex].openingBalance  < 0">
+                    <span>{{budgetTableService.monthyBalances()[cellIndex]?.openingBalance | displayZero}} </span>
+                </td>
+            </ng-container>
+        </tr>
+        <tr class="border border-slate-400 bg-cyan-300">
+            <td class="border border-slate-400 font-semibold">
+                Closing Balance
+            </td>
+
+            <ng-container
+                *ngFor="let months of budgetTableService.rangedMonths();  let cellIndex = index; trackBy: trackByFn">
+                <td class="border border-slate-400 font-semibold"
+                [class.text-red-500]="budgetTableService.monthyBalances()[cellIndex] && budgetTableService.monthyBalances()[cellIndex].closingBalance  < 0">
+                    <span>{{budgetTableService.monthyBalances()[cellIndex]?.closingBalance | displayZero}} </span>
+                </td>
+            </ng-container>
+        </tr>
+
+    </tbody>
+</table>
+
+<app-context-menu [contextMenu]="this.contextMenu()" (appliedToAll)="applyToAll($event)" (deletedRow)="deleteRow($event)"></app-context-menu>
